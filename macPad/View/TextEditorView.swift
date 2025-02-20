@@ -13,12 +13,12 @@ import UniformTypeIdentifiers
  
  The window’s title is updated to the file's name (or “Untitled” if no file is open). The view also shows:
  
- - The last edited date, which is fetched from the file's modification attributes if the document is saved, or the current date if there are unsaved changes.
+ - The last edited date, which is fetched from the file's modification attributes if the document is saved,
+   or the current date if there are unsaved changes.
  - The file name, with an asterisk (*) appended on the right if there are unsaved changes.
  - The file extension (in uppercase) and the character count of the document.
  
- Unsaved changes are tracked locally within this view.
-
+ Changes are reflected in the window’s close button via `isDocumentEdited`.
  */
 struct TextEditorView: View {
     @EnvironmentObject var document: Document
@@ -30,6 +30,10 @@ struct TextEditorView: View {
             set: { newValue in
                 document.text = newValue
                 unsavedChanges = true
+                document.hasUnsavedChanges = true
+                if let window = NSApp.keyWindow {
+                    window.isDocumentEdited = true
+                }
             }
         ))
         .font(.system(.body, design: .monospaced))
@@ -37,20 +41,6 @@ struct TextEditorView: View {
         .padding(.bottom, 30)
         .scrollContentBackground(.hidden)
         .background(.ultraThinMaterial)
-        .onAppear {
-            updateWindowTitle()
-            // Caso o delegate da janela ativa não seja do tipo DocumentWindowDelegate, atribuí-lo.
-            if let window = NSApp.keyWindow, !(window.delegate is DocumentWindowDelegate) {
-                let newDelegate = DocumentWindowDelegate(document: document)
-                window.delegate = newDelegate
-                WindowDelegateStorage.shared.delegates.append(newDelegate)
-            }
-        }
-        .onChange(of: document.fileURL) { _, _ in
-            updateWindowTitle()
-            // Reset unsavedChanges when the file is saved (i.e., when fileURL changes)
-            unsavedChanges = false
-        }
         .overlay(
             ZStack {
                 Rectangle()
@@ -75,15 +65,34 @@ struct TextEditorView: View {
             }
             .frame(height: 30), alignment: .bottom
         )
+        // Use a WindowAccessor to capture the NSWindow and assign the delegate if needed.
+        .background(WindowAccessor { window in
+            if let window = window, !(window.delegate is DocumentWindowDelegate) {
+                let newDelegate = DocumentWindowDelegate(document: document)
+                window.delegate = newDelegate
+                WindowDelegateStorage.shared.delegates.append(newDelegate)
+                window.isDocumentEdited = document.hasUnsavedChanges
+            }
+        })
+        .onChange(of: document.fileURL) { _, _ in
+            updateWindowTitle()
+            unsavedChanges = false
+            document.hasUnsavedChanges = false
+        }
+        .onAppear {
+            updateWindowTitle()
+        }
+        // Set a minimum size for the view.
+        .frame(minWidth: 500, minHeight: 400)
     }
     
     /**
      Returns the formatted last edited date.
      
      If there are unsaved changes, it returns the current date and time.
-     If the document is saved, it retrieves the file's modification date from the file attributes.
+     If the document is saved, it retrieves the file's modification date.
      
-     - Returns: A `String` representing the last edited date.
+     - Returns: A String representing the last edited date.
      */
     func getLastEditedDate() -> String {
         if unsavedChanges {
@@ -113,16 +122,36 @@ struct TextEditorView: View {
     }
     
     /**
-     Updates the window title based on the document's file URL.
+     Updates the window title and the document edited indicator based on the document's file URL.
      
-     If the document is saved, the window title will display the file's name.
-     Otherwise, it will display "Untitled".
+     If the document is saved, the window title displays the file's name;
+     otherwise, it displays "Untitled". Also updates the window's `isDocumentEdited` flag.
      */
     private func updateWindowTitle() {
         if let window = NSApp.keyWindow {
             window.title = document.fileURL?.lastPathComponent ?? "Untitled"
+            window.isDocumentEdited = document.hasUnsavedChanges
         }
     }
+}
+
+/**
+ A helper view that captures the NSWindow associated with this view.
+ 
+ The `onWindow` closure is called once the NSWindow is available.
+ */
+struct WindowAccessor: NSViewRepresentable {
+    var onWindow: (NSWindow?) -> Void
+    
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            onWindow(view.window)
+        }
+        return view
+    }
+    
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 #Preview {

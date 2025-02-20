@@ -10,9 +10,22 @@
 		9800529A2D6756EC00D997A4 /* macPad.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = macPad.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		980052B02D675D3C00D997A4 /* Exceptions for "macPad" folder in "macPad" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 980052992D6756EB00D997A4 /* macPad */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9800529C2D6756EC00D997A4 /* macPad */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				980052B02D675D3C00D997A4 /* Exceptions for "macPad" folder in "macPad" target */,
+			);
 			path = macPad;
 			sourceTree = "<group>";
 		};
@@ -257,11 +270,15 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = macPad/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "This app needs access to the Desktop to open and save files.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.amorim.macPad;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -284,11 +301,15 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = macPad/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
+				INFOPLIST_KEY_NSDesktopFolderUsageDescription = "This app needs access to the Desktop to open and save files.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.amorim.macPad;
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -9,17 +9,16 @@ import Foundation
 import SwiftUI
 
 /**
- A model that represents the document being edited.
+ A model representing the document being edited.
  
- This class holds the text content and an optional file URL. It is used by both the
- text editor view and the app's menu commands.
- 
- - Author: Luis H. Ramorim
- - Since: macOS 12.0
+ This class holds the text content, an optional file URL, and a flag indicating whether there are unsaved changes.
  */
 final class Document: ObservableObject {
-    /// The content of the document.
-    @Published var text: String = ""
-    /// The URL of the document file. If nil, the document is unsaved.
+    @Published var text: String = "" {
+        didSet {
+            hasUnsavedChanges = true
+        }
+    }
     @Published var fileURL: URL? = nil
+    @Published var hasUnsavedChanges: Bool = false
 }
