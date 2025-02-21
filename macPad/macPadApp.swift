@@ -30,10 +30,13 @@ struct macPadApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     var body: some Scene {
-        // No default window is created on launch.
+        // The Settings scene is used here to manage global commands.
+        // Applying a hidden title bar style hides the window title
+        // while keeping the action buttons available.
         Settings {
             EmptyView()
         }
+        .windowStyle(HiddenTitleBarWindowStyle())
         .commands {
             CommandGroup(replacing: CommandGroupPlacement.newItem) {
                 Button("New File") {
