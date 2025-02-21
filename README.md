@@ -3,7 +3,7 @@
     <td><img src="https://github.com/user-attachments/assets/59ecfd6f-181b-4111-ae19-23ea9db23ee9" width="120"></td>
     <td>
       <h1 style="margin: 0;">macPad</h1>
-      <p style="margin: 0;">The Extremely Lightweight TXT Editor for macOS 14</p>
+      <p style="margin: 0;">The Extremely Lightweight Editor for macOS.</p>
     </td>
   </tr>
 </table>
