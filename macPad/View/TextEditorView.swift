@@ -7,30 +7,48 @@
 
 import SwiftUI
 import UniformTypeIdentifiers
-import MarkdownUI // Using the swiftui-markdown package
+import MarkdownUI  // For Markdown preview
+import WebKit      // For HTML preview
 
 /**
- A view that displays a text editor and, if the file is Markdown, optionally a Markdown preview side by side.
- 
- - The editor and preview automatically fill the entire window space (no explicit window resizing).
- - A toggle button in the bottom overlay of the text editor shows/hides the Markdown preview if the file is ".md".
- - The window's title is updated to the file name; the overlay shows the last edited date (Today, Yesterday, or formatted as "dd/MM/yy - HH:mm"),
+ A view that displays a text editor and, if the file is Markdown or HTML, optionally a preview side by side.
+
+ - The editor and preview automatically fill the entire window space.
+ - A toggle button in the bottom overlay of the text editor shows/hides the preview if the file is ".md", ".html", or ".htm".
+ - The overlay shows the last edited date (Today, Yesterday, or formatted as "dd/MM/yy - HH:mm"),
    file name (with an asterisk " *" if there are unsaved changes), and character count.
  */
 struct TextEditorView: View {
     @EnvironmentObject var document: Document
     @State private var unsavedChanges: Bool = false
     
-    /// The text to show in the Markdown preview.
+    /// The text to show in the preview (Markdown or HTML).
     @State private var previewText: String = ""
     
-    /// Determines if the file is a Markdown file based on its extension.
+    /// Determines if the file is Markdown based on its extension.
     var isMarkdown: Bool {
         return document.fileURL?.pathExtension.lowercased() == "md"
     }
     
-    /// Controls whether the Markdown preview is visible.
+    /// Determines if the file is HTML based on its extension.
+    var isHTML: Bool {
+        guard let ext = document.fileURL?.pathExtension.lowercased() else { return false }
+        return ["html", "htm"].contains(ext)
+    }
+    
+    /// Controls whether the preview is visible.
     @State private var showPreview: Bool = true
+    
+    /// A computed label for the file type in the bottom overlay.
+    private var fileTypeLabel: String {
+        if isMarkdown {
+            return "Markdown"
+        } else if isHTML {
+            return "HTML"
+        } else {
+            return document.fileURL?.pathExtension.uppercased() ?? "Unknown"
+        }
+    }
     
     var body: some View {
         // The main vertical stack filling all space.
@@ -40,34 +58,29 @@ struct TextEditorView: View {
                 textEditorContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 
-                if isMarkdown && showPreview {
+                if (isMarkdown || isHTML), showPreview {
                     Divider()
                     
-                    ScrollView {
-                        Markdown(previewText)
-                            .padding()
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .multilineTextAlignment(.leading)
-                            .foregroundColor(.primary)
-                    }
-                    .padding(.bottom, 30)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .overlay(
-                        ZStack {
-                            // Semi-transparent background strip.
-                            Rectangle()
-                                .frame(maxWidth: .infinity)
-                                .foregroundStyle(.gray.opacity(0.3))
-                            
-                            HStack{
-                                Text("Preview")
-                                    .font(.system(.caption2, design: .monospaced))
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                            }
-                            
+                    // Show either Markdown or HTML preview side by side.
+                    if isMarkdown {
+                        ScrollView {
+                            Markdown(previewText)
+                                .padding()
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .multilineTextAlignment(.leading)
+                                .foregroundColor(.primary)
                         }
-                            .frame(height: 30), alignment: .bottom
-                    )
+                        .padding(.bottom, 30)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .overlay(previewLabelOverlay, alignment: .bottom)
+                        
+                    } else if isHTML {
+                        // HTML preview using a WebView
+                        HTMLPreview(htmlContent: previewText)
+                            .padding(.bottom, 30)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .overlay(previewLabelOverlay, alignment: .bottom)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -119,7 +132,7 @@ struct TextEditorView: View {
                 // Semi-transparent background strip.
                 Rectangle()
                     .frame(maxWidth: .infinity)
-                    .foregroundStyle(.gray.opacity(0.3))
+                    .foregroundStyle(.tertiary)
                 
                 // Horizontal info bar.
                 HStack {
@@ -131,13 +144,13 @@ struct TextEditorView: View {
                         .font(.system(.caption, design: .monospaced))
                         .frame(maxWidth: .infinity, alignment: .center)
                     
-                    // Show "Markdown" if the file is Markdown, otherwise show the extension.
-                    Text("\(isMarkdown ? "Markdown" : (document.fileURL?.pathExtension.uppercased() ?? "Unknown")) | \(document.text.count) c")
+                    // Show the file type label ("Markdown", "HTML", or extension) plus character count.
+                    Text("\(fileTypeLabel) | \(document.text.count) c")
                         .font(.system(.caption2, design: .monospaced))
                         .frame(maxWidth: .infinity, alignment: .trailing)
                     
-                    // If this is a Markdown file, show the preview toggle button.
-                    if isMarkdown {
+                    // If this is a Markdown or HTML file, show the preview toggle button.
+                    if isMarkdown || isHTML {
                         Button {
                             showPreview.toggle()
                         } label: {
@@ -146,7 +159,7 @@ struct TextEditorView: View {
                                   : "inset.filled.righthalf.arrow.right.rectangle")
                                 .font(.headline)
                         }
-                        .help("Toggle Markdown Preview")
+                        .help("Toggle Preview")
                         .buttonStyle(.plain)
                     }
                 }
@@ -163,6 +176,22 @@ struct TextEditorView: View {
                 window.isDocumentEdited = document.hasUnsavedChanges
             }
         })
+    }
+    
+    /// An overlay labeling the preview area with a simple "Preview" strip at the bottom.
+    private var previewLabelOverlay: some View {
+        ZStack {
+            Rectangle()
+                .frame(maxWidth: .infinity)
+                .foregroundStyle(.tertiary).opacity(1.0)
+            
+            HStack {
+                Text("Preview")
+                    .font(.system(.caption2, design: .monospaced))
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+        .frame(height: 30)
     }
     
     /**
@@ -209,6 +238,23 @@ struct TextEditorView: View {
             window.title = document.fileURL?.lastPathComponent ?? "Untitled"
             window.isDocumentEdited = document.hasUnsavedChanges
         }
+    }
+}
+
+/**
+ A helper view that embeds a WKWebView for displaying HTML content in SwiftUI.
+ */
+struct HTMLPreview: NSViewRepresentable {
+    let htmlContent: String
+    
+    func makeNSView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.loadHTMLString(htmlContent, baseURL: nil)
+        return webView
+    }
+    
+    func updateNSView(_ nsView: WKWebView, context: Context) {
+        nsView.loadHTMLString(htmlContent, baseURL: nil)
     }
 }
 
