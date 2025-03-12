@@ -29,7 +29,7 @@ func openNewWindow(with document: Document) {
     newWindow.titleVisibility = .hidden
 
     // Define the initial window size as 700x400.
-    let initialSize = NSSize(width: 700, height: 400)
+    let initialSize = NSSize(width: 800, height: 700)
     newWindow.setContentSize(initialSize)
 
     // Set a minimum window size.

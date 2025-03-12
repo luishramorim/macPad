@@ -373,6 +373,7 @@
 				minimumVersion = 2.4.1;
 			};
 		};
+
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -386,6 +387,7 @@
 			package = 987526782D68E56500959246 /* XCRemoteSwiftPackageReference "swift-markdown-ui" */;
 			productName = MarkdownUI;
 		};
+
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 980052922D6756EB00D997A4 /* Project object */;
