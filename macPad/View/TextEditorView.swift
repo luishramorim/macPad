@@ -22,10 +22,10 @@ struct TextEditorView: View {
     @EnvironmentObject var document: Document
     @State private var unsavedChanges: Bool = false
     
-    /// The text to show in the preview (Markdown or HTML).
+    /// The text to show in the Markdown or HTML preview.
     @State private var previewText: String = ""
     
-    /// Determines if the file is Markdown based on its extension.
+    /// Determines if the file is a Markdown file based on its extension.
     var isMarkdown: Bool {
         return document.fileURL?.pathExtension.lowercased() == "md"
     }
@@ -51,9 +51,7 @@ struct TextEditorView: View {
     }
     
     var body: some View {
-        // The main vertical stack filling all space.
         VStack(spacing: 0) {
-            // The horizontal stack for the editor (always) and preview (if shown).
             HStack(spacing: 0) {
                 textEditorContent
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -61,7 +59,6 @@ struct TextEditorView: View {
                 if (isMarkdown || isHTML), showPreview {
                     Divider()
                     
-                    // Show either Markdown or HTML preview side by side.
                     if isMarkdown {
                         ScrollView {
                             Markdown(previewText)
@@ -75,7 +72,6 @@ struct TextEditorView: View {
                         .overlay(previewLabelOverlay, alignment: .bottom)
                         
                     } else if isHTML {
-                        // HTML preview using a WebView
                         HTMLPreview(htmlContent: previewText)
                             .padding(.bottom, 30)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -85,35 +81,31 @@ struct TextEditorView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 500, minHeight: 400) // A basic minimum size for convenience.
+        .frame(minWidth: 500, minHeight: 400)
         .onAppear {
             updateWindowTitle()
-            // Initialize the preview text from the document, or use a default for empty docs.
             previewText = document.text.isEmpty
                 ? "## Hello World\n\nRender Markdown text in SwiftUI."
                 : document.text
         }
         .onChange(of: document.text) { _, newValue in
-            // Keep the preview text in sync with the document.
             previewText = newValue.isEmpty
                 ? "## Hello World\n\nRender Markdown text in SwiftUI."
                 : newValue
         }
         .onChange(of: document.fileURL) { _, _ in
-            // Reset unsaved changes whenever a new file is loaded.
             updateWindowTitle()
             unsavedChanges = false
             document.hasUnsavedChanges = false
         }
     }
     
-    /// The main text editor content, with an overlay showing file details and a toggle button.
     var textEditorContent: some View {
         TextEditor(text: Binding(
             get: { document.text },
             set: { newValue in
                 document.text = newValue
-                previewText = newValue // Keep preview in sync as user types.
+                previewText = newValue
                 unsavedChanges = true
                 document.hasUnsavedChanges = true
                 if let window = NSApp.keyWindow {
@@ -126,15 +118,12 @@ struct TextEditorView: View {
         .padding(.bottom, 30)
         .scrollContentBackground(.hidden)
         .background(.ultraThinMaterial)
-        // Overlay for file info + toggle button at bottom of text editor.
         .overlay(
             ZStack {
-                // Semi-transparent background strip.
                 Rectangle()
                     .frame(maxWidth: .infinity)
                     .foregroundStyle(.tertiary)
                 
-                // Horizontal info bar.
                 HStack {
                     Text("Last edited: \(getLastEditedDate())")
                         .font(.system(.caption2, design: .monospaced))
@@ -144,12 +133,10 @@ struct TextEditorView: View {
                         .font(.system(.caption, design: .monospaced))
                         .frame(maxWidth: .infinity, alignment: .center)
                     
-                    // Show the file type label ("Markdown", "HTML", or extension) plus character count.
                     Text("\(fileTypeLabel) | \(document.text.count) c")
                         .font(.system(.caption2, design: .monospaced))
                         .frame(maxWidth: .infinity, alignment: .trailing)
                     
-                    // If this is a Markdown or HTML file, show the preview toggle button.
                     if isMarkdown || isHTML {
                         Button {
                             showPreview.toggle()
@@ -168,7 +155,6 @@ struct TextEditorView: View {
             .frame(height: 30), alignment: .bottom
         )
         .background(WindowAccessor { window in
-            // Attach a custom window delegate if none is set.
             if let window = window, !(window.delegate is DocumentWindowDelegate) {
                 let newDelegate = DocumentWindowDelegate(document: document)
                 window.delegate = newDelegate
@@ -178,7 +164,6 @@ struct TextEditorView: View {
         })
     }
     
-    /// An overlay labeling the preview area with a simple "Preview" strip at the bottom.
     private var previewLabelOverlay: some View {
         ZStack {
             Rectangle()
@@ -194,13 +179,6 @@ struct TextEditorView: View {
         .frame(height: 30)
     }
     
-    /**
-     Returns the formatted last edited date.
-     
-     - If the file was modified today, returns "Today".
-     - If it was modified yesterday, returns "Yesterday".
-     - Otherwise, returns the date formatted as "dd/MM/yy - HH:mm".
-     */
     func getLastEditedDate() -> String {
         let now = Date()
         let calendar = Calendar.current
@@ -230,51 +208,12 @@ struct TextEditorView: View {
         }
     }
     
-    /**
-     Updates the window title and the document edited indicator based on the document's file URL.
-     */
     private func updateWindowTitle() {
         if let window = NSApp.keyWindow {
             window.title = document.fileURL?.lastPathComponent ?? "Untitled"
             window.isDocumentEdited = document.hasUnsavedChanges
         }
     }
-}
-
-/**
- A helper view that embeds a WKWebView for displaying HTML content in SwiftUI.
- */
-struct HTMLPreview: NSViewRepresentable {
-    let htmlContent: String
-    
-    func makeNSView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        webView.loadHTMLString(htmlContent, baseURL: nil)
-        return webView
-    }
-    
-    func updateNSView(_ nsView: WKWebView, context: Context) {
-        nsView.loadHTMLString(htmlContent, baseURL: nil)
-    }
-}
-
-/**
- A helper view that captures the NSWindow associated with this view.
- 
- The `onWindow` closure is called once the NSWindow is available.
- */
-struct WindowAccessor: NSViewRepresentable {
-    var onWindow: (NSWindow?) -> Void
-    
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            onWindow(view.window)
-        }
-        return view
-    }
-    
-    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 #Preview {
